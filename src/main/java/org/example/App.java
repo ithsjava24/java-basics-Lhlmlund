@@ -1,6 +1,8 @@
 package org.example;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.*;
 
 
@@ -10,21 +12,21 @@ class App {
 
         Scanner scanner = new Scanner(System.in);
         String userOption;
+        boolean isTestMode = false;
 
-        boolean valid = false;
+
         do {
 
-            // Meny
-            System.out.println("    \n" +
-                    "                Elpriser\n" +
-                    "                ========\n" +
-                    "                1. Inmatning\n" +
-                    "                2. Min, Max och Medel\n" +
-                    "                3. Sortera\n" +
-                    "                4. Bästa Laddningstid (4h)\n" +
-                    "                5. Visualize\n" +
-                    "                e. Avsluta\n");
-
+            System.out.println("""
+                Elpriser
+                ========
+                1. Inmatning
+                2. Min, Max och Medel
+                3. Sortera
+                4. Bästa Laddningstid (4h)
+                5. Visualisering
+                e. Avsluta
+                """);
 
             userOption = scanner.nextLine();
             userOption = userOption.toLowerCase();
@@ -34,38 +36,45 @@ class App {
             switch (userOption) {
 
                 case "1" -> {
-                    valid = true;
-                    System.out.print("\nInmatning");
-                    inputPrice(scanner);
 
-                    break loop;
+                    inputPrice(scanner);
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    PrintStream printStream = new PrintStream(outputStream);
+                    PrintStream originalOut = System.out;
+                    try {
+                        System.setOut(printStream);
+                        visualization(scanner);
+                        System.out.flush();
+                        consoleOutput = outputStream.toString();
+                        System.out.println(consoleOutput);
+
+                    } finally { System.setOut(originalOut); }
+
                 }
 
                 case "2" -> {
-                    System.out.print("\nMin Max och Medel");
+
                     minMax(scanner);
-                    break loop;
+
                 }
 
                 case "3" -> {
-                    System.out.print("\nSortera");
+
                     comparison(scanner);
-                    break loop;
+
 
                 }
 
 
                 case "4" -> {
-                    System.out.print("\nBästa Laddningstid");
                     chargetime(scanner);
 
                 }
 
                 case "5" -> {
 
-                    System.out.print("\nVisualize\n");
-                    visualization(scanner);
-
+                   visualization(scanner);
+                  // System.out.print(consoleOutput);
 
                 }
 
@@ -79,14 +88,15 @@ class App {
 
                 default -> {
                     System.out.print("\nfel input, försök igen");
-                    break;
 
                 }
             }
         } while (!userOption.equals("e"));
 
-
     }
+
+
+
 
     // Ange pris per timma
     public static void inputPrice(Scanner scanner) {
@@ -104,6 +114,7 @@ class App {
                 prices[index] = scanner.nextInt();
                 comparisonnumbers[index][0] = prices[index];
                 comparisonnumbers[index][1] = index;
+
                 System.out.print("\nYou added " + prices[index] + "!\n");
                 scanner.nextLine();
                 // returns instead of restarting
@@ -137,11 +148,12 @@ class App {
     }
 
     public static int[] prices = new int[24];
-    public static int[][] comparisonnumbers = new int[24][2];
+    public static Integer[][] comparisonnumbers = new Integer[24][2];
+    public static int[] nonsortedprices = new int[24];
+    public static String consoleOutput = "";
 
     public static void minMax(Scanner scanner) {
 
-        System.out.print("\nVisar minimum, maximum och medelvärdet\n");
         Locale.setDefault(new Locale("sv", "SE"));
         double average = 0;
         int sum = 0;
@@ -151,102 +163,39 @@ class App {
         }
 
         // minmax values
+        String minhour = "";
+        String maxhour = "";
         int minValue = Arrays.stream(prices).min().orElse(Integer.MAX_VALUE);
         int maxValue = Arrays.stream(prices).max().orElse(Integer.MIN_VALUE);
 
         // Array to Arraylist
-        ArrayList<Integer> convertedarraylist = new ArrayList<>();
-        for (int index : prices) {
-            convertedarraylist.add(index);
-
-        }
 
 
-        ArrayList<Integer> timelist = new ArrayList<>();
-        ArrayList<Integer> timelist2 = new ArrayList<>();
+        for (int i = 0; i < prices.length; i++) {
 
-        // count to find max index position(hour)
-
-        int count = 0;
-        int count2 = 0;
-        while (count < convertedarraylist.size()) {
-
-            if (convertedarraylist.get(count) == maxValue) {
-
-                timelist.add(count);
+            if (prices[i] == minValue) {
+                minhour = time(i);
             }
-            count++;
-        }
-        // count to find min index position(hour)
-        while (count2 < convertedarraylist.size()) {
-
-            if (convertedarraylist.get(count2) == minValue) {
-
-                timelist2.add(count2);
+            if (prices[i] == maxValue) {
+                maxhour = time(i);
             }
-            count2++;
-        }
-
-
-        // temp Sorterar // insertionsorting method
-
-        for (int i = 1; i < prices.length; i++) {
-
-            int currentValue = prices[i];
-
-
-            int j = i - 1;
-
-            while (j >= 0 && prices[j] > currentValue) {
-                prices[j + 1] = prices[j];
-                j--;
-            }
-            prices[j + 1] = currentValue;
-
-        }
-
-        average = sum / 24;
-
-        // prints tempsorted min value
-        System.out.print("==================================================================\n"
-                + "\nMinsta priset är " + prices[0] + " öre mellan klockan: \n ");
-
-        for (int i = 0; i < timelist2.size(); i++) {
-
-            System.out.print(timelist2.get(i) + " - ");
-            int totime = timelist2.get(i);
-            totime = totime + 1;
-            System.out.print(totime + " ");
-
-            while (i != timelist2.size() - 1) { // om det finns samma värden så printas det ut
-                System.out.print(" och klockan ");
-
+            if  (!minhour.isEmpty() && !maxhour.isEmpty()) {
                 break;
             }
-
         }
 
-        System.out.print("\n\n-----------------------------------------------\n");
-        // prints tempsorted max value
-        System.out.print("Största priset är " + prices[23] + " öre mellan klockan:\n ");
-        for (int i = 0; i < timelist.size(); i++) {
 
-            System.out.print(timelist.get(i) + " - ");
-            int totime = timelist.get(i);
-            totime = totime + 1;
-            System.out.print(totime);
+        average = (double) sum / 24;
 
-            while (i != timelist.size() - 1) {
-                System.out.print(" och klockan "); // om det finns samma värden så printas det ut
 
-                break;
-            }
 
-        }
-        System.out.printf("\n\n\n==||== Medelvärdet av priset är %.2f öre " +
-                "\n==================================================================", average);
 
-        promptEnterKey();
+        System.out.printf("Lägsta pris: %s, %d öre/kWh\n", minhour, minValue);
+        System.out.printf("Högsta pris: %s, %d öre/kWh\n", maxhour, maxValue);
+        System.out.printf("Medelpris: %.2f öre/kWh\n", average);
+
+
+
     }
 
 
@@ -256,22 +205,20 @@ class App {
 
         // prints original index position with value sorted
 
-        System.out.print("\nPriser sorterade med tidstämpel \n");
-        for (int index = 0; index < 24; index++) {
-            int tempnumberextender = comparisonnumbers[index][1] + 1;
-            System.out.print("\n\n" + comparisonnumbers[index][0] + " öre klockan " + comparisonnumbers[index][1]
-                    + " - " + tempnumberextender);
+
+        for (Integer[] timedprices : comparisonnumbers) {
+
+            System.out.printf("%02d-%02d %d öre\n", timedprices[1], timedprices[1] + 1, timedprices[0]);
 
 
         }
-        promptEnterKey();
+
     }
 
 
     // reads input from user in bytesize like hitting enter
 
     public static void promptEnterKey() {
-        System.out.print("\n\nTryck \"ENTER\" för att fortsätta...");
         try {
             int read = System.in.read(new byte[2]);
         } catch (IOException e) {
@@ -282,7 +229,7 @@ class App {
 
     public static void chargetime(Scanner scanner) {
 
-
+        nonsortedprices = prices.clone();
         int mincost = Integer.MAX_VALUE;     // tracks minimum sum
         int startH = 0;            // keeps track of start hour
 
@@ -302,32 +249,49 @@ class App {
         }
 
         double average = mincost / 4.0;
-        System.out.printf("\nBästa tid att börja ladda batteriet en 4 timmar frammåt är klockan: " + startH + " - " + (startH = startH + 1)
-                + "\nDå behöver du betala " + mincost + " öre" +
-                "\nMedelpriset är:  %.2f  öre", average);
+        System.out.printf("  Påbörja laddning klockan %02d\n", startH);
+        System.out.printf("Medelpris 4h: %.1f öre/kWh\n", average);
 
-        promptEnterKey();
+
+
     }
 
 
+    private static String time(int hour) {
+        return String.format("%02d-%02d", hour, hour + 1);
+
+    }
+
+
+
+
     public static void visualization(Scanner scanner) {
-                    // minmax added
+        // minmax added
         Integer maxPrice = Arrays.stream(prices).max().getAsInt();
         Integer minPrice = Arrays.stream(prices).min().getAsInt();
+
 
         int height = 6;  // scale roof
         int length = 24; // hours a day
 
-        for (int index = height; index >= 0; index--) {
+        int maxlength = Math.max(String.format("%d", maxPrice).length(), String.format("%d", minPrice).length());
 
-            int scaler = minPrice + (maxPrice - minPrice) * index / height;  // scales a threshhold for each row of the graph
+        for (int index = 0; index < height; index++) {
 
-            System.out.printf("|%4d | ", scaler);
+            int scalerthreshhold = minPrice + (maxPrice - minPrice) * (height - 1 - index) / (height - 1);  // scales a threshhold for each row of the graph
+
+
+            if (index == 0) {
+                System.out.printf("%"+ maxlength + "d| ", maxPrice);
+
+            } else if (index == height- 1) {
+                System.out.printf("%"+ maxlength + "d| ", minPrice);
+            } else System.out.printf("%" + maxlength + "s| ", "");
 
 
             for (int j = 0; j < length; j++) {
 
-                if (prices[j] >= scaler) {  // if the price exceeds threshhold for the current row it will print x else empty
+                if (prices[j] >= scalerthreshhold) {  // if the price exceeds threshhold for the current row it will print x else empty
 
                     System.out.print(" x ");
 
@@ -335,14 +299,15 @@ class App {
                     System.out.print("   ");
                 }
 
+
+
             }
             System.out.println();   // a new line added for the next row
         }
 
-
-        System.out.print("|_____|________________________________________________________________________|");
-        System.out.print("\n| Tim |- 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23|");
-        promptEnterKey();
+        String spacer = " ".repeat(maxlength);
+        System.out.print(spacer + "|------------------------------------------------------------------------\n");
+        System.out.print(spacer + "| 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23\n\n\n");
 
     }
 
